@@ -121,6 +121,7 @@ export const useGameStore = create((set, get) => ({
   currentPhase: 1,
   turnQueue: [],
   votingActive: false,
+  votingPending: false,
   votes: {},
   votingTimeLeft: 120,
   gameLog: [],
@@ -160,10 +161,16 @@ export const useGameStore = create((set, get) => ({
         set({ page: 'reconnecting' });
         s.emit('lobby:rejoin', { code: session.code, name: session.name }, (res) => {
           if (res?.ok) {
+            const room = res.room;
+            let page = 'lobby';
+            if (room?.phase === 'discussion' || room?.phase === 'picking') page = 'discussion';
+            if (room?.phase === 'final') page = 'final';
             set({
               roomCode: res.code,
-              isHost: res.room?.host === s.id,
-              players: res.room?.players || [],
+              page,
+              playerName: session.name,
+              isHost: room?.host === s.id,
+              players: room?.players || [],
               myDossier: session.myDossier || null,
               mySpecialSelf: session.mySpecialSelf || null,
               mySpecialGroup: session.mySpecialGroup || null,
@@ -249,6 +256,7 @@ export const useGameStore = create((set, get) => ({
         bunkerContents: room.bunkerItems || [],
         exiledPlayers: room.exiled || [],
         votingActive: room.votingOpen || false,
+        votingPending: room.votingPending || false,
         allDossiers,
         page,
       });
@@ -441,6 +449,11 @@ export const useGameStore = create((set, get) => ({
   useSpecial(effect, targetId, cb) {
     const { socket, roomCode } = get();
     socket?.emit('game:useSpecial', { code: roomCode, effect, targetId }, cb);
+  },
+
+  startVoting() {
+    const { socket, roomCode } = get();
+    socket?.emit('game:startVoting', { code: roomCode });
   },
 
   endVoting() {

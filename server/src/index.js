@@ -39,6 +39,7 @@ function createRoom(hostSocketId, hostName) {
     bots: 0,
     phase: "lobby",
     discussionPhase: 1,
+    votingPending: false,
     players: [],
     cards: [],
     pickQueue: [],
@@ -121,6 +122,7 @@ function roomPublic(room) {
     currentTurnIndex: room.currentTurnIndex,
     turnQueue: room.turnQueue,
     votingOpen: room.votingOpen,
+    votingPending: room.votingPending || false,
     disaster: room.disaster,
     bunkerItems: room.bunkerItems,
     exiled: room.exiled.map(p => ({
@@ -571,9 +573,10 @@ io.on("connection", socket => {
 
       // Финал после фазы 8 (все фазы пройдены)
       if (phase > 7) {
-        // Если ещё остались лишние — голосование
+        // Если ещё остались лишние — ожидаем старта голосования
         if (alive > slots) {
-          startVoting(room);
+          room.votingPending = true;
+          broadcastRoom(room);
           return;
         }
         room.phase = "final";
@@ -596,31 +599,39 @@ io.on("connection", socket => {
 
       // Обязательное голосование в конце фазы 3
       if (phase === 4) {
-        startVoting(room);
+        room.votingPending = true;
+        broadcastRoom(room);
         return;
       }
 
       // Обязательное голосование в конце фазы 7
       if (phase === 8) {
-        startVoting(room);
+        room.votingPending = true;
+        broadcastRoom(room);
         return;
       }
 
       // Доп. голосования в фазах 4-6:
-      // Цель — к концу фазы 7 должно остаться slots+1 игроков
-      // Голосуем если: оставшихся кик >= оставшихся фаз до 7
       if (phase >= 5 && phase <= 7) {
         const targetBeforeFinal = slots + 1;
         const kicksNeeded = alive - targetBeforeFinal;
         const phasesLeft = 8 - phase;
         if (kicksNeeded > 0 && kicksNeeded >= phasesLeft) {
-          startVoting(room);
+          room.votingPending = true;
+          broadcastRoom(room);
           return;
         }
       }
 
       broadcastRoom(room);
     }
+  });
+
+  socket.on("game:startVoting", ({ code }) => {
+    const room = rooms.get(code);
+    if (!room || room.host !== socket.id || !room.votingPending) return;
+    room.votingPending = false;
+    startVoting(room);
   });
 
   socket.on("game:endVoting", ({ code }) => {

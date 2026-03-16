@@ -105,6 +105,7 @@ export default function GamePage() {
     votingActive, votes, votingTimeLeft, catastrophe, bunkerContents,
     exiledPlayers, gameLog,
     revealTrait, skipTurn, nextPhase: nextPhaseAction, vote, closeLobby, endVoting, useSpecial,
+    votingPending, startVoting,
   } = useGameStore();
 
   const allDossiers = useGameStore(s => s.allDossiers) || {};
@@ -254,16 +255,27 @@ export default function GamePage() {
           )}
           {isHost && (
             <>
-              {votingActive ? (
+              {votingPending && !votingActive ? (
+                // Фаза завершена, ожидаем старт голосования
                 <motion.button
-                  className="btn btn-danger game__next-phase-pulse"
-                  onClick={endVoting}
-                  animate={{ boxShadow: ["0 0 0px rgba(200,68,68,0)", "0 0 20px rgba(200,68,68,0.7)", "0 0 0px rgba(200,68,68,0)"] }}
-                  transition={{ duration: 1.2, repeat: Infinity }}
+                  className="btn btn-warning game__next-phase-pulse"
+                  onClick={startVoting}
+                  animate={{ boxShadow: ["0 0 0px rgba(200,150,50,0)", "0 0 20px rgba(200,150,50,0.8)", "0 0 0px rgba(200,150,50,0)"] }}
+                  transition={{ duration: 1.0, repeat: Infinity }}
                 >
-                  ⚖ Голосование
+                  ⚖ Начать голосование
+                </motion.button>
+              ) : votingActive ? (
+                // Голосование идёт
+                <motion.button
+                  className="btn btn-danger"
+                  disabled
+                  style={{ opacity: 0.6, cursor: 'not-allowed' }}
+                >
+                  ⏳ Ожидание...
                 </motion.button>
               ) : (
+                // Обычная фаза раскрытия
                 <motion.button
                   className={`btn btn-success${phaseComplete ? " game__next-phase-pulse" : ""}`}
                   onClick={nextPhaseAction}
