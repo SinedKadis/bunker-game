@@ -220,6 +220,14 @@ export const useGameStore = create((set, get) => ({
       const myPlayer = room.players.find(p => p.id === myId);
       const nameToSave = playerName || myPlayer?.name;
       if (room.code && nameToSave) {
+        _saveSession({
+          code: room.code,
+          name: nameToSave,
+          myDossier: myDossier || null,
+          mySpecialSelf: mySpecialSelf || null,
+          mySpecialGroup: mySpecialGroup || null,
+        });
+        if (!playerName && nameToSave) set({ playerName: nameToSave });
       }
 
       set({
