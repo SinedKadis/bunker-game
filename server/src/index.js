@@ -348,7 +348,49 @@ io.on("connection", socket => {
     return cb?.({ ok: false, error: "Нельзя войти в игру сейчас" });
   });
 
-  socket.on("lobby:settings", ({ code, settings }) => {
+  socket.on("lobby:rejoin", ({ code, name }, cb) => {
+    const room = rooms.get(code?.toUpperCase());
+    if (!room) return cb?.({ ok: false, error: "Комната не найдена" });
+
+    // Ищем игрока по имени среди живых и изгнанных
+    const existingPlayer = room.players.find(p => p.name === name && !p.isBot)
+      || room.exiled?.find(p => p.name === name && !p.isBot);
+
+    if (!existingPlayer) return cb?.({ ok: false, error: "Игрок не найден" });
+
+    const oldId = existingPlayer.id;
+
+    // Обновляем socketId у игрока
+    existingPlayer.id = socket.id;
+    if (room.host === oldId) room.host = socket.id;
+
+    // Обновляем очереди
+    room.turnQueue = room.turnQueue.map(id => id === oldId ? socket.id : id);
+    room.pickQueue = room.pickQueue?.map(id => id === oldId ? socket.id : id);
+
+    // Обновляем голоса
+    if (room.votes?.[oldId] !== undefined) {
+      room.votes[socket.id] = room.votes[oldId];
+      delete room.votes[oldId];
+    }
+    for (const [voterId, targetId] of Object.entries(room.votes || {})) {
+      if (targetId === oldId) room.votes[voterId] = socket.id;
+    }
+
+    socket.join(code.toUpperCase());
+    cb?.({ ok: true, code: code.toUpperCase(), room: roomPublic(room) });
+
+    // Отправляем traits обратно игроку
+    if (existingPlayer.traits) {
+      socket.emit("player:traits", {
+        ...existingPlayer.traits,
+        _specialSelf:  existingPlayer.specialSelf,
+        _specialGroup: existingPlayer.specialGroup,
+      });
+    }
+
+    broadcastRoom(room);
+  });
     const room = rooms.get(code);
     if (!room || room.host !== socket.id) return;
     if (settings.maxPlayers !== undefined) room.maxPlayers = Math.max(2, Math.min(12, settings.maxPlayers));
