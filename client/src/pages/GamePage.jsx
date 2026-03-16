@@ -134,7 +134,7 @@ export default function GamePage() {
   const isMyTurn = currentTurnId === playerId;
   const isBotTurn = currentTurnPlayer?.isBot && isHost;
   const allowedKeys = getAllowedKeys(currentPhase);
-  const canRevealThisTurn = isMyTurn && !votingActive && (me?.revealedThisPhase || 0) < 1;
+  const canRevealThisTurn = isMyTurn && !votingActive && !votingPending && (me?.revealedThisPhase || 0) < 1;
 
   // Отслеживаем новые раскрытия
   useEffect(() => {
@@ -212,7 +212,7 @@ export default function GamePage() {
         </div>
         <div className="game__topbar-center">
           <AnimatePresence mode="wait">
-            {isBotTurn && isHost && !votingActive && !phaseComplete ? (
+            {isBotTurn && isHost && !votingActive && !votingPending && !phaseComplete ? (
               <motion.div key="bot" className="game__bot-turn-bar"
                 initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
                 <span>🤖 Ход бота: <strong>{currentTurnPlayer?.name}</strong></span>
