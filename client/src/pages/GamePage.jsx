@@ -257,10 +257,13 @@ export default function GamePage() {
               <motion.button
                 className={`btn btn-success${phaseComplete ? " game__next-phase-pulse" : ""}`}
                 onClick={nextPhaseAction}
+                disabled={!phaseComplete}
+                title={!phaseComplete ? "Дождитесь пока все игроки раскроют карточку" : ""}
+                style={!phaseComplete ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
                 animate={phaseComplete ? { boxShadow: ["0 0 0px rgba(45,180,90,0)", "0 0 20px rgba(45,180,90,0.6)", "0 0 0px rgba(45,180,90,0)"] } : {}}
                 transition={{ duration: 1.2, repeat: Infinity }}
               >
-                След. фаза
+                {phaseComplete ? "След. фаза" : `Ждём ${alivePlayers.filter(p => (p.revealedThisPhase || 0) < 1).length} игр...`}
               </motion.button>
               <button className="btn btn-danger" onClick={closeLobby}>Завершить</button>
             </>
