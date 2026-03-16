@@ -1,0 +1,742 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ===== LAYOUT ===== */
+.game {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ── Topbar ── */
+.game__topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.6rem 1.4rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(8,8,10,0.98);
+  backdrop-filter: blur(12px);
+  flex-shrink: 0; gap: 1rem; z-index: 100;
+  position: sticky; top: 0; /* прилипает сверху при скролле */
+}
+.game__topbar-left  { display:flex; align-items:center; gap:1rem; }
+.game__topbar-right { display:flex; align-items:center; gap:0.6rem; }
+.game__topbar-center { flex:1; display:flex; justify-content:center; }
+
+.game__topbar-logo {
+  font-family: var(--font-display); font-size: 1.1rem;
+  color: var(--accent); letter-spacing: 0.2em;
+}
+.game__phase-badge {
+  display:flex; align-items:center; gap:0.4rem;
+  background: var(--bg-elevated); border:1px solid var(--border);
+  padding: 0.22rem 0.7rem;
+  font-family: var(--font-title); font-size:0.6rem; letter-spacing:0.12em;
+  text-transform:uppercase; color:var(--text-muted);
+}
+.game__phase-badge strong { font-size:0.95rem; color:var(--accent); }
+.game__phase-note { color:var(--accent-dim); margin-left:3px; }
+
+.game__your-turn {
+  display:inline-flex; align-items:center; gap:0.6rem;
+  background:rgba(200,150,62,0.09); border:1px solid var(--accent-dim);
+  color:var(--accent); padding:0.38rem 1rem;
+  font-family:var(--font-title); font-size:0.72rem; letter-spacing:0.12em; text-transform:uppercase;
+}
+.game__turn-pulse {
+  width:8px; height:8px; border-radius:50%; background:var(--accent);
+  animation:pulse-glow 1.4s ease-in-out infinite; flex-shrink:0;
+}
+.game__bot-turn {
+  color:#4a7ec8; font-family:var(--font-title); font-size:0.72rem; letter-spacing:0.1em;
+}
+.game__other-turn {
+  color:var(--text-muted); font-family:var(--font-title); font-size:0.72rem; letter-spacing:0.1em;
+}
+.game__other-turn strong { color:var(--text-primary); }
+
+.game__phase-done {
+  display:inline-flex; align-items:center; gap:0.6rem;
+  background:rgba(45,122,79,0.1); border:1px solid rgba(45,122,79,0.4);
+  color:var(--green-bright); padding:0.38rem 1.1rem;
+  font-family:var(--font-title); font-size:0.72rem; letter-spacing:0.1em;
+}
+
+.game__next-phase-pulse {
+  animation: next-phase-blink 1.2s ease-in-out infinite !important;
+}
+@keyframes next-phase-blink {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0px rgba(45,180,90,0); }
+  50%       { opacity: 0.85; box-shadow: 0 0 18px rgba(45,180,90,0.55); }
+}
+.game__voting-indicator {
+  background:rgba(200,68,68,0.1); border:1px solid var(--red-dim); color:var(--red);
+  padding:0.38rem 1rem; font-family:var(--font-title); font-size:0.72rem; letter-spacing:0.12em;
+}
+.game__cat-btn { font-size:0.72rem; padding:0.35rem 0.85rem; }
+
+/* ── Main layout ── */
+.game__layout {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  flex: 1;
+  min-height: 0;
+  overflow: visible; /* позволяем расти */
+}
+
+/* ── Sidebar ── */
+.game__sidebar {
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto; padding: 0.9rem; gap: 1.1rem;
+  position: sticky; top: 57px; /* прилипает при скролле */
+  max-height: calc(100vh - 57px);
+  align-self: start;
+}
+.game__block-title {
+  display:flex; align-items:center; gap:0.5rem;
+  font-family:var(--font-title); font-size:0.62rem; letter-spacing:0.16em;
+  text-transform:uppercase; color:var(--text-muted); margin-bottom:0.5rem;
+}
+.game__bunker-items { display:flex; flex-direction:column; gap:0.25rem; }
+.game__bunker-item {
+  display:flex; align-items:flex-start; gap:0.4rem;
+  font-size:0.73rem; color:var(--text-primary); line-height:1.35;
+  padding:0.28rem 0.45rem; border:1px solid var(--border); background:var(--bg-card);
+}
+.game__bunker-item--new { border-color:var(--accent-dim); background:rgba(200,150,62,0.07); color:var(--accent); }
+.game__bunker-dot { color:var(--accent-dim); font-size:0.44rem; margin-top:0.35rem; flex-shrink:0; }
+.game__bunker-unknown { font-size:0.62rem; color:var(--text-muted); padding:0.15rem 0.4rem; }
+.game__turn-queue { display:flex; flex-direction:column; gap:0.18rem; }
+.game__turn-item {
+  display:flex; align-items:center; gap:0.4rem;
+  padding:0.26rem 0.45rem; font-size:0.72rem; color:var(--text-dim);
+  border-left:2px solid transparent; transition:all 0.2s;
+}
+.game__turn-item.active { color:var(--accent); border-left-color:var(--accent); background:rgba(200,150,62,0.05); }
+.game__turn-num { font-family:var(--font-mono); font-size:0.58rem; color:var(--text-muted); min-width:14px; }
+.game__turn-arrow { margin-left:auto; color:var(--accent); }
+.game__log { display:flex; flex-direction:column; flex:1; min-height:0; }
+.game__log-entries { display:flex; flex-direction:column; gap:0.22rem; overflow-y:auto; }
+.game__log-entry {
+  font-size:0.67rem; color:var(--text-dim); padding:0.22rem 0.4rem;
+  line-height:1.4; border-left:2px solid var(--border);
+}
+.game__log-entry--info    { border-left-color:var(--accent-dim); }
+.game__log-entry--warning { border-left-color:#b87c2a; color:#b87c2a; }
+.game__log-entry--exile   { border-left-color:var(--red); color:var(--red); }
+
+/* ── Center ── */
+.game__center { display:flex; flex-direction:column; min-width: 0; }
+.game__center--locked {
+  pointer-events: none;
+  opacity: 0.6;
+}
+.game__dossiers { padding:0.9rem 1.1rem 1.5rem; display:flex; flex-direction:column; gap:0.8rem; }
+
+/* ── Player row ── */
+.player-row {
+  border:1px solid var(--border); background:var(--bg-card);
+  border-radius:8px; overflow:hidden; transition:border-color 0.25s, box-shadow 0.25s;
+}
+.player-row--active {
+  border-color:var(--accent-dim);
+  box-shadow:0 0 18px rgba(200,150,62,0.12);
+}
+.player-row--me {
+  border-color:rgba(74,126,200,0.5);
+  background:rgba(74,126,200,0.03);
+}
+
+.player-row__name {
+  display:flex; align-items:center; gap:0.5rem;
+  padding:0.3rem 0.85rem;
+  background:var(--bg-elevated); border-bottom:1px solid var(--border);
+  font-family:var(--font-title); font-size:0.7rem; letter-spacing:0.1em;
+}
+.player-row--me .player-row__name { background:rgba(74,126,200,0.1); }
+.player-row__name-text { flex:1; }
+.player-row--me .player-row__name-text { color:#7ab0e8; }
+
+.player-row__turn-tag {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:0.55rem; padding:0.1rem 0.45rem;
+  border:1px solid var(--accent-dim); color:var(--accent);
+  letter-spacing:0.08em; text-transform:uppercase;
+  animation:pulse-glow 1.4s ease-in-out infinite;
+}
+.player-row__turn-pulse {
+  width:5px; height:5px; border-radius:50%; background:var(--accent);
+  animation:pulse-glow 1.4s ease-in-out infinite;
+}
+.player-row__revealed-count {
+  font-size:0.58rem; color:var(--text-muted);
+  font-family:var(--font-mono); margin-left:auto;
+}
+
+.player-row__cards {
+  display:flex; flex-direction:row; gap:0.5rem;
+  padding:0.65rem 0.75rem; overflow-x:auto;
+}
+.player-row__cards::-webkit-scrollbar { height:3px; }
+.player-row__cards::-webkit-scrollbar-thumb { background:var(--border-bright); }
+
+/* ══════════════════════════════════════
+   TRAIT CARD — сердце всего UI
+══════════════════════════════════════ */
+.tcard {
+  flex-shrink:0;
+  width:120px; height:150px;
+  perspective:700px;
+  cursor:default;
+  border-radius:10px;
+}
+
+/* Своя карточка — чуть крупнее */
+.tcard--own { width:132px; height:160px; }
+
+/* Можно раскрыть — курсор pointer */
+.tcard--can-reveal { cursor:pointer; }
+/* НЕ добавляем hover transform — это вызывало флип своих карточек */
+
+/* Пустой слот чужой карточки */
+.tcard--empty {
+  border:2px dashed rgba(255,255,255,0.07);
+  border-radius:10px;
+  background:rgba(255,255,255,0.015);
+}
+.tcard__empty-inner {
+  width:100%; height:100%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:0.35rem; opacity:0.18;
+}
+.tcard__empty-icon { font-size:1.3rem; }
+.tcard__empty-label {
+  font-size:0.58rem; color:var(--text-muted); text-align:center;
+  font-family:var(--font-title); letter-spacing:0.1em; text-transform:uppercase;
+}
+
+/* 3D inner контейнер */
+.tcard__inner {
+  width:100%; height:100%;
+  position:relative;
+  transform-style:preserve-3d;
+  transition:transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius:10px;
+}
+
+/* Флип при раскрытии */
+.tcard__inner--show-face { transform:rotateY(180deg); }
+
+/* Промежуточный флип при клике */
+.tcard__inner--flipping { transform:rotateY(90deg) !important; }
+
+/* Обе стороны */
+.tcard__back,
+.tcard__face {
+  position:absolute; inset:0;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  border-radius:9px;
+  overflow:hidden;
+}
+
+/* ── РУБАШКА ── */
+.tcard__back {
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:0.4rem;
+  background:
+    radial-gradient(ellipse at 30% 25%, rgba(50,18,8,0.8) 0%, transparent 55%),
+    radial-gradient(ellipse at 70% 75%, rgba(25,8,4,0.9) 0%, transparent 55%),
+    linear-gradient(155deg, #100b08 0%, #1c0e08 45%, #0a0605 100%);
+  border:1.5px solid rgba(110,52,18,0.55);
+  transition:border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Своя нераскрытая рубашка — тёплая золотистая */
+.tcard--own .tcard__back {
+  background:
+    radial-gradient(ellipse at 35% 25%, rgba(80,55,10,0.7) 0%, transparent 55%),
+    linear-gradient(155deg, #141008 0%, #201508 45%, #0d0a05 100%);
+  border-color:rgba(180,130,40,0.45);
+}
+
+.tcard--can-reveal .tcard__back {
+  border-color:rgba(200,150,50,0.7);
+  box-shadow:0 0 14px rgba(200,140,30,0.18);
+}
+.tcard--can-reveal:hover .tcard__back {
+  border-color:rgba(220,170,60,0.9);
+  box-shadow:0 0 28px rgba(220,160,40,0.28), inset 0 0 20px rgba(0,0,0,0.3);
+}
+
+.tcard__back-pattern {
+  position:absolute; inset:5px;
+  border:1px solid rgba(130,62,20,0.3);
+  border-radius:6px;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(120,48,12,0.07) 0px, rgba(120,48,12,0.07) 1px, transparent 1px, transparent 9px),
+    repeating-linear-gradient(-45deg, rgba(90,36,8,0.05) 0px, rgba(90,36,8,0.05) 1px, transparent 1px, transparent 9px);
+}
+
+.tcard__back-icon { font-size:1.4rem; position:relative; filter:brightness(0.6); }
+.tcard--own .tcard__back-icon { filter:brightness(0.8); }
+.tcard__back-label {
+  position:relative;
+  font-family:var(--font-title); font-size:0.6rem; letter-spacing:0.15em;
+  text-transform:uppercase; color:rgba(180,90,30,0.7);
+}
+.tcard--own .tcard__back-label { color:rgba(200,150,50,0.75); }
+.tcard__back-hint {
+  position:absolute; bottom:8px;
+  font-size:0.52rem; color:rgba(200,140,40,0.55);
+  font-family:var(--font-title); letter-spacing:0.1em; text-transform:uppercase;
+  animation:pulse-glow 1.8s ease-in-out infinite;
+}
+
+/* ── ЛИЦО КАРТОЧКИ ── */
+.tcard__face {
+  transform:rotateY(180deg);
+  display:flex; flex-direction:column;
+  align-items:stretch; justify-content:flex-start;
+  background:#ffffff;
+  border:2px solid #1a1a1a;
+  overflow:hidden; /* обрезаем на уровне контейнера */
+}
+
+/* Своя раскрытая — зелёная рамка */
+.tcard--own.tcard--revealed .tcard__face { border-color:#2d7a4f; }
+
+/* Чужая раскрытая — обычная */
+.tcard--other .tcard__face { border-color:#2a2a2a; }
+
+/* Новая карточка — вспышка */
+.tcard--new .tcard__face {
+  animation:card-reveal-flash 0.8s ease-out;
+}
+@keyframes card-reveal-flash {
+  0%   { box-shadow:0 0 0px rgba(200,220,255,0); }
+  30%  { box-shadow:0 0 40px rgba(200,220,255,0.6), inset 0 0 20px rgba(200,220,255,0.15); }
+  100% { box-shadow:0 0 0px rgba(200,220,255,0); }
+}
+
+.tcard__face-header {
+  background:#1a1a1a; color:#fff;
+  padding:0.3rem 0.5rem;
+  display:flex; align-items:center; gap:0.3rem;
+  flex-shrink:0;
+}
+.tcard--own.tcard--revealed .tcard__face-header { background:#1e4d35; }
+
+.tcard__face-icon { font-size:0.9rem; flex-shrink:0; }
+.tcard__face-label {
+  font-size:0.65rem; font-weight:600; letter-spacing:0.02em; flex:1;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.tcard__face-lock {
+  font-size:0.65rem; margin-left:auto; opacity:0.7; flex-shrink:0;
+}
+.tcard__face-check {
+  font-size:0.65rem; color:#6dbf86; margin-left:auto; flex-shrink:0;
+}
+
+/* Exiled */
+.game__exiled {
+  display:flex; align-items:center; flex-wrap:wrap; gap:0.5rem;
+  border-top:1px solid var(--border); padding-top:0.6rem;
+}
+.game__exiled-label {
+  font-family:var(--font-title); font-size:0.62rem; letter-spacing:0.12em;
+  color:var(--red); text-transform:uppercase;
+}
+.game__exiled-name {
+  font-size:0.72rem; color:var(--red); padding:0.15rem 0.45rem;
+  border:1px solid var(--red-dim); background:rgba(200,68,68,0.05);
+}
+
+/* ── Voting ── */
+.game__voting-panel {
+  position:fixed; bottom:1.5rem; right:1.5rem;
+  width:340px; max-height:80vh; overflow-y:auto;
+  background:#0d0d12; border:1px solid var(--red-dim);
+  padding:1.1rem; z-index:200;
+  box-shadow:0 0 40px rgba(200,68,68,0.2); border-radius:6px;
+}
+.game__voting-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; }
+.game__voting-header h3 { font-size:0.95rem; color:var(--red); }
+.game__voting-timer { font-family:var(--font-mono); font-size:1.1rem; color:var(--text-muted); }
+.game__voting-timer.urgent { color:var(--red); animation:pulse-glow 0.8s ease-in-out infinite; }
+.game__voting-desc { font-size:0.75rem; color:var(--text-dim); margin-bottom:0.8rem; }
+.game__voting-section-label {
+  font-size:0.6rem; color:var(--text-dim); letter-spacing:0.1em; margin-bottom:6px;
+  font-family:var(--font-title); text-transform:uppercase;
+}
+.game__voting-players { display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.4rem; }
+.game__vote-btn {
+  padding:0.32rem 0.75rem; font-size:0.72rem;
+  border:1px solid var(--border); background:var(--bg-elevated); color:var(--text-dim);
+  cursor:pointer; transition:all 0.2s; font-family:var(--font-title); letter-spacing:0.08em;
+}
+.game__vote-btn:hover:not(:disabled) { border-color:var(--red-dim); color:var(--red); }
+.game__vote-btn.voted { border-color:var(--red); color:var(--red); background:rgba(200,68,68,0.1); }
+.game__voting-voted { font-size:0.7rem; color:var(--green-bright); margin-top:0.3rem; }
+
+/* ── Modal ── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(6,6,8,0.88);
+  z-index:1000; display:flex; align-items:center; justify-content:center; padding:1rem;
+}
+.catastrophe-modal {
+  background:#0d0d12; border:1px solid var(--accent-dim);
+  padding:2.2rem; max-width:600px; width:100%; text-align:center;
+  box-shadow:0 0 70px rgba(200,150,62,0.22); border-radius:4px;
+}
+.catastrophe-modal__icon { font-size:3rem; margin-bottom:0.4rem; }
+.catastrophe-modal__title { font-size:1.4rem; color:var(--accent); margin-bottom:0.4rem; }
+.catastrophe-modal__desc {
+  font-size:0.95rem; color:var(--text-muted); font-style:italic;
+  line-height:1.7; margin:1rem 0; text-align:left;
+}
+.catastrophe-modal__stats {
+  display:grid; grid-template-columns:1fr 1fr; gap:0.7rem; margin:1.2rem 0; text-align:left;
+}
+.catastrophe-modal__stat { background:var(--bg-elevated); border:1px solid var(--border); padding:0.7rem; }
+.catastrophe-modal__stat span {
+  display:block; font-family:var(--font-title); font-size:0.58rem;
+  letter-spacing:0.12em; color:var(--text-dim); text-transform:uppercase; margin-bottom:0.25rem;
+}
+.catastrophe-modal__stat strong { font-size:0.88rem; color:var(--text-primary); }
+
+.glow-line { height:1px; background:linear-gradient(90deg,transparent,var(--accent-dim),transparent); margin:0.7rem 0; }
+.noise-overlay {
+  position:fixed; inset:0; pointer-events:none; z-index:9998; opacity:0.025;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Кнопки хода бота в topbar ── */
+.game__bot-turn-bar {
+  display:flex; align-items:center; gap:0.7rem;
+  color:#4a7ec8; font-family:var(--font-title); font-size:0.72rem; letter-spacing:0.08em;
+}
+.game__bot-move-btn {
+  font-size:0.65rem; padding:0.3rem 0.8rem;
+  border-color:rgba(74,126,200,0.5); color:#4a7ec8;
+  background:rgba(74,126,200,0.08);
+  animation:pulse-glow 1.6s ease-in-out infinite;
+}
+.game__bot-move-btn:hover { background:rgba(74,126,200,0.18); border-color:#4a7ec8; }
+.game__bot-skip-btn {
+  font-size:0.62rem; padding:0.3rem 0.65rem;
+  color:var(--text-dim); border-color:var(--border); opacity:0.7;
+}
+
+/* ── Карточки предметов бункера ── */
+.game__bunker-cards { display:flex; flex-direction:column; gap:0.4rem; }
+.game__bunker-unknown {
+  font-size:0.62rem; color:var(--text-muted); padding:0.3rem 0.5rem;
+  border:1px dashed var(--border); text-align:center; opacity:0.6;
+}
+
+.bunker-card {
+  border:1px solid var(--border);
+  border-radius:6px; overflow:hidden;
+  background:var(--bg-card);
+  transition:border-color 0.2s;
+}
+.bunker-card--new {
+  border-color:var(--accent-dim);
+  box-shadow:0 0 14px rgba(200,150,62,0.15);
+}
+
+.bunker-card__header {
+  background:rgba(200,150,62,0.1);
+  border-bottom:1px solid var(--border);
+  padding:0.28rem 0.5rem;
+  display:flex; align-items:center; gap:0.4rem;
+}
+.bunker-card--new .bunker-card__header { background:rgba(200,150,62,0.18); }
+
+.bunker-card__icon { font-size:0.9rem; flex-shrink:0; }
+.bunker-card__title {
+  font-size:0.68rem; font-weight:600; color:var(--accent);
+  font-family:'Inter',sans-serif; line-height:1.3;
+}
+.bunker-card--new .bunker-card__title { color:var(--accent); }
+
+.bunker-card__desc {
+  padding:0.3rem 0.5rem;
+  font-size:0.62rem; color:var(--text-dim); line-height:1.4;
+  font-style:italic;
+}
+
+/* ── Флип при наведении для чужих нераскрытых (п.4+5) ──
+   Чужие нераскрытые: при наведении показываем намёк (лицо с "?")
+   но в TraitCard мы управляем этим через state,
+   поэтому здесь только transition speed ── */
+.tcard--other:not(.tcard--revealed) .tcard__inner {
+  transition:transform 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+/* При hover на чужую нераскрытую — управляется JS state (flippedByHover) */
+
+/* Чужая нераскрытая карточка — рубашка тёмная без намёка на содержимое (п.5) */
+.tcard--other:not(.tcard--revealed) .tcard__back {
+  background:
+    radial-gradient(ellipse at 40% 30%, rgba(20,20,30,0.9) 0%, transparent 60%),
+    linear-gradient(155deg, #0e0e14 0%, #141420 50%, #0a0a10 100%);
+  border-color:rgba(80,80,120,0.4);
+}
+.tcard--other:not(.tcard--revealed):hover .tcard__back {
+  border-color:rgba(100,100,160,0.6);
+  box-shadow:0 0 12px rgba(80,80,160,0.15);
+}
+.tcard--other:not(.tcard--revealed) .tcard__back-label { color:rgba(100,100,160,0.6); }
+.tcard--other:not(.tcard--revealed) .tcard__back-icon { filter:brightness(0.4) hue-rotate(180deg); }
+
+/* Чужая нераскрытая при наведении — показываем "?"  */
+.tcard--other:not(.tcard--revealed) .tcard__face {
+  background:#1a1a2e;
+  border-color:#2a2a45;
+  display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start;
+}
+.tcard--other:not(.tcard--revealed) .tcard__face-header { background:#252540; }
+.tcard--other:not(.tcard--revealed) .tcard__face-value {
+  color:rgba(140,140,200,0.5);
+  font-size:1.8rem;
+  text-align:center;
+  flex:1; /* только для ? растягиваем чтобы по центру */
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* ══ VOTING MODAL — правая панель, выезжает сбоку ══ */
+.voting-overlay {
+  position: fixed;
+  top: 57px;
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  z-index: 400;
+  pointer-events: none; /* сам оверлей не перехватывает клики */
+}
+
+.voting-modal {
+  pointer-events: all;
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 10, 14, 0.96);
+  border-left: 1px solid var(--red-dim);
+  padding: 1.2rem;
+  overflow-y: auto;
+  box-shadow: -8px 0 32px rgba(200, 68, 68, 0.2);
+}
+
+.voting-modal__header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.6rem;
+}
+.voting-modal__title {
+  font-family: var(--font-display); font-size: 1.3rem;
+  color: var(--red); letter-spacing: 0.1em;
+}
+.voting-modal__timer {
+  font-family: var(--font-mono); font-size: 1.6rem;
+  color: var(--text-muted); font-weight: 700;
+}
+.voting-modal__timer.urgent {
+  color: var(--red);
+  animation: pulse-glow 0.7s ease-in-out infinite;
+}
+
+.voting-modal__desc {
+  font-size: 0.8rem; color: var(--text-dim);
+  margin-bottom: 1.2rem; line-height: 1.5;
+  border-bottom: 1px solid var(--border); padding-bottom: 1rem;
+}
+
+.voting-modal__section { margin-bottom: 1.2rem; }
+.voting-modal__section-label {
+  font-family: var(--font-title); font-size: 0.62rem;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-dim); margin-bottom: 0.6rem;
+}
+
+.voting-modal__players {
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+}
+
+.voting-modal__vote-btn {
+  padding: 0.45rem 1.1rem;
+  font-size: 0.78rem; font-family: var(--font-title);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  border: 1px solid var(--border); background: var(--bg-elevated);
+  color: var(--text-dim); cursor: pointer;
+  border-radius: 4px; transition: all 0.2s;
+}
+.voting-modal__vote-btn:hover:not(:disabled) {
+  border-color: var(--red-dim); color: var(--red);
+  background: rgba(200,68,68,0.08);
+}
+.voting-modal__vote-btn.voted {
+  border-color: var(--red); color: var(--red);
+  background: rgba(200,68,68,0.12);
+  pointer-events: none;
+}
+.voting-modal__vote-btn:disabled:not(.voted) { opacity: 0.4; cursor: not-allowed; }
+
+.voting-modal__voted {
+  font-size: 0.75rem; color: var(--green-bright);
+  margin-top: 0.6rem;
+}
+
+.voting-modal__bot-row {
+  margin-bottom: 0.8rem;
+}
+.voting-modal__bot-name {
+  font-size: 0.7rem; color: #4a7ec8;
+  font-family: var(--font-title); letter-spacing: 0.06em;
+  display: block; margin-bottom: 0.35rem;
+}
+
+/* Кнопка завершения голосования */
+.voting-modal__end-btn {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  font-family: var(--font-title);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  transition: all 0.2s;
+  opacity: 0.5;
+}
+.voting-modal__end-btn.ready {
+  border-color: var(--red-dim);
+  color: var(--red);
+  background: rgba(200,68,68,0.08);
+  cursor: pointer;
+  opacity: 1;
+  animation: next-phase-blink 1.2s ease-in-out infinite;
+}
+.voting-modal__end-btn.ready:hover {
+  background: rgba(200,68,68,0.16);
+  border-color: var(--red);
+}
+
+.tcard__face-value {
+  padding: 0.3rem 0.45rem 0.2rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.25;
+  text-align: left;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.tcard__face-desc {
+  padding: 0.15rem 0.45rem 0.35rem;
+  font-size: 0.56rem;
+  color: #888;
+  line-height: 1.35;
+  font-style: italic;
+  border-top: 1px solid #eee;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.tcard--own .tcard__face-value {
+  font-size: 0.76rem;
+}
+.tcard--own .tcard__face-desc {
+  font-size: 0.58rem;
+}
+
+/* ══ ОСОБЫЕ КАРТОЧКИ ══ */
+.special-divider {
+  width: 2px;
+  height: 100%;
+  min-height: 90px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, transparent, rgba(100,160,255,0.4), transparent);
+  margin: 0 0.3rem;
+  border-radius: 2px;
+  align-self: stretch;
+}
+
+.tcard--special {
+  border: 2px solid rgba(74,126,200,0.5);
+  background: #f0f4ff;
+}
+.tcard--special .tcard__face { background: #f0f4ff; }
+.tcard--special.tcard--can-reveal {
+  border-color: #4a7ec8;
+  box-shadow: 0 4px 16px rgba(74,126,200,0.25);
+  cursor: pointer;
+}
+.tcard--special.tcard--can-reveal:hover { transform: translateY(-6px); }
+.tcard--special-used {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+  cursor: default;
+}
+
+/* Уведомление */
+.special-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10,10,14,0.95);
+  border: 1px solid #4a7ec8;
+  color: #7ab8f5;
+  padding: 0.7rem 1.4rem;
+  font-family: var(--font-title);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  z-index: 600;
+  border-radius: 4px;
+  box-shadow: 0 0 24px rgba(74,126,200,0.3);
+  white-space: nowrap;
+}
+
+/* Модал выбора цели */
+.special-target-modal {
+  background: #0d0d12;
+  border: 1px solid #4a7ec8;
+  padding: 1.5rem;
+  width: 320px;
+  border-radius: 6px;
+  box-shadow: 0 0 40px rgba(74,126,200,0.2);
+}
+.special-target-modal__title {
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  color: #7ab8f5;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+.special-target-modal__players {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.special-target-modal__btn {
+  padding: 0.5rem 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--font-title);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 3px;
+}
+.special-target-modal__btn:hover {
+  border-color: #4a7ec8;
+  color: #7ab8f5;
+  background: rgba(74,126,200,0.1);
+}

@@ -1,0 +1,206 @@
+.landing {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.landing__bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.landing__bg-radial {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 30%, rgba(200, 100, 30, 0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 20% 80%, rgba(100, 50, 150, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 80% 20%, rgba(30, 60, 120, 0.05) 0%, transparent 60%);
+}
+
+.landing__bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(200, 150, 62, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 150, 62, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.landing__bg-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(6, 6, 8, 0.9) 100%);
+}
+
+.landing__content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 600px;
+  padding: 2rem;
+  width: 100%;
+}
+
+.landing__logo { margin-bottom: 2.5rem; }
+
+.landing__logo-pre {
+  font-family: var(--font-title);
+  font-size: 0.7rem;
+  letter-spacing: 0.4em;
+  color: var(--accent-dim);
+  margin-bottom: 0.5rem;
+}
+
+.landing__title {
+  font-size: clamp(3.5rem, 10vw, 7rem);
+  font-weight: 900;
+  color: var(--text-primary);
+  line-height: 0.9;
+  text-shadow:
+    0 0 40px rgba(200, 150, 62, 0.3),
+    0 0 80px rgba(200, 150, 62, 0.1);
+  animation: flicker 8s ease-in-out infinite;
+}
+
+.landing__title-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  margin: 1.2rem auto;
+  width: 60%;
+}
+
+.landing__subtitle {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  font-style: italic;
+  letter-spacing: 0.05em;
+}
+
+.landing__warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  font-family: var(--font-title);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: var(--red);
+  opacity: 0.6;
+  margin-bottom: 2.5rem;
+  text-transform: uppercase;
+}
+
+.landing__warning-icon { animation: flicker 2s ease-in-out infinite; }
+
+.landing__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.landing__btn-primary,
+.landing__btn-secondary {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 1.1rem 2rem;
+}
+
+.landing__btn-primary {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+  font-size: 1rem;
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+.landing__btn-secondary {
+  font-size: 1rem;
+  border-color: #3a3a50;
+  color: var(--text-muted);
+}
+.landing__btn-secondary:hover { color: var(--text-primary); }
+
+.btn-icon {
+  font-size: 1.3rem;
+  display: block;
+  margin-bottom: 0.1rem;
+}
+
+.btn-sub {
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  opacity: 0.6;
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  font-style: italic;
+}
+
+/* Form */
+.landing__form {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+.landing__form-title {
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.landing__form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.landing__form-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-family: var(--font-title);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.landing__form-fields input {
+  width: 100%;
+}
+
+.landing__form-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+}
+
+/* Footer */
+.landing__footer {
+  margin-top: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  font-family: var(--font-title);
+  font-size: 0.6rem;
+  letter-spacing: 0.25em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.landing__footer-sep { color: var(--accent-dim); font-size: 0.5rem; }

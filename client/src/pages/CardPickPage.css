@@ -1,0 +1,463 @@
+/* ===== CARD PICK PAGE ===== */
+
+/* Fix: cardpick scrolls inside #root which is the scroll container */
+.cardpick {
+  min-height: 100%;
+  padding: 1.5rem;
+  padding-bottom: 4rem;
+  position: relative;
+}
+
+.cardpick__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.cardpick__label {
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  letter-spacing: 0.35em;
+  color: var(--accent);
+  margin-bottom: 0.2rem;
+}
+
+.cardpick__title { font-size: 1.5rem; }
+
+.cardpick__header-right {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.cardpick__catastrophe-btn {
+  font-size: 0.8rem;
+  padding: 0.5rem 1.2rem;
+}
+
+/* Turn indicator */
+.cardpick__turn {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.cardpick__turn-mine {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: rgba(200, 150, 62, 0.08);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  padding: 0.6rem 1.5rem;
+  font-family: var(--font-title);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cardpick__turn-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse-glow 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.cardpick__turn-other {
+  font-family: var(--font-title);
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.cardpick__turn-done {
+  font-family: var(--font-title);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  color: var(--green-bright);
+  text-transform: uppercase;
+}
+
+.cardpick__turn-done-hint {
+  color: var(--text-dim);
+  font-size: 0.7rem;
+}
+
+/* Queue */
+.cardpick__queue {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.cardpick__queue-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--border);
+  font-family: var(--font-title);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  transition: all 0.3s;
+}
+
+.cardpick__queue-item.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(200, 150, 62, 0.06);
+}
+
+.cardpick__queue-item.done {
+  border-color: var(--green);
+  color: var(--green-bright);
+  background: rgba(45, 122, 79, 0.06);
+}
+
+.cardpick__queue-check { color: var(--green-bright); font-size: 0.7rem; }
+
+/* Cards grid */
+.cardpick__grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.75rem;
+  max-width: 900px;
+  margin: 0 auto 2rem;
+}
+
+@media (max-width: 900px) { .cardpick__grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 600px) { .cardpick__grid { grid-template-columns: repeat(3, 1fr); } }
+
+/* ===== FLIP CARD ===== */
+/* Fix 2+3: proper 3D flip with rубашка */
+
+.dossier-card {
+  aspect-ratio: 2/3;
+  cursor: default;
+  perspective: 800px;
+}
+
+.dossier-card--selectable { cursor: pointer; }
+
+/* The flipping container */
+.dossier-card__inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When picked/flipping — rotate to show front */
+.dossier-card__inner.flipped {
+  transform: rotateY(180deg);
+}
+
+/* Both faces share position */
+.dossier-card__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+/* Hide front face content completely when not flipped (belt+suspenders) */
+.dossier-card__inner:not(.flipped) .dossier-card__front {
+  visibility: hidden;
+  pointer-events: none;
+}
+.dossier-card__inner.flipped .dossier-card__back {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* === BACK FACE (рубашка — shown by default) === */
+.dossier-card__back {
+  background:
+    radial-gradient(ellipse at 30% 30%, rgba(60,20,10,0.7) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 70%, rgba(30,10,5,0.8) 0%, transparent 60%),
+    linear-gradient(160deg, #0f0a08 0%, #1a0e08 40%, #0a0608 100%);
+  border: 1px solid rgba(100,50,20,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+/* Fix 2: all selectable cards show рубашку and are hoverable */
+.dossier-card--selectable .dossier-card__back {
+  border-color: rgba(150,80,30,0.6);
+  box-shadow: 0 0 12px rgba(150,80,30,0.15);
+}
+.dossier-card--selectable:hover .dossier-card__back {
+  border-color: rgba(200,120,40,0.85);
+  box-shadow: 0 0 28px rgba(200,120,40,0.22), inset 0 0 20px rgba(0,0,0,0.3);
+}
+.dossier-card--selectable:hover {
+  transform: translateY(-4px) scale(1.03);
+  transition: transform 0.2s ease;
+}
+
+.dossier-card__back-logo {
+  font-family: var(--font-display);
+  font-size: clamp(0.55rem, 1.6vw, 0.9rem);
+  letter-spacing: 0.35em;
+  color: rgba(180,90,30,0.7);
+  white-space: nowrap;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-35deg);
+  opacity: 0.65;
+  user-select: none;
+  text-shadow: 0 0 8px rgba(200,100,30,0.4);
+}
+
+.dossier-card__back-grid {
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(120,55,20,0.35);
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      rgba(100,40,10,0.08) 0px,
+      rgba(100,40,10,0.08) 1px,
+      transparent 1px,
+      transparent 8px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(80,30,8,0.06) 0px,
+      rgba(80,30,8,0.06) 1px,
+      transparent 1px,
+      transparent 8px
+    );
+}
+
+.dossier-card__back-num {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  font-family: var(--font-title);
+  font-size: 0.55rem;
+  color: rgba(150,75,25,0.6);
+  letter-spacing: 0.15em;
+}
+
+/* === FRONT FACE (кто выбрал) === */
+.dossier-card__front {
+  transform: rotateY(180deg); /* starts hidden */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dossier-card__picked-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px solid;
+  padding: 0.6rem;
+}
+
+.dossier-card__picked-content.mine {
+  border-color: var(--green);
+  background: rgba(45, 122, 79, 0.1);
+}
+
+.dossier-card__picked-content.other {
+  border-color: var(--border);
+  background: var(--bg-elevated);
+  opacity: 0.8;
+}
+
+.dossier-card__picked-icon {
+  font-size: 1.3rem;
+  color: var(--green-bright);
+}
+
+.dossier-card__picked-content.other .dossier-card__picked-icon {
+  color: var(--text-dim);
+}
+
+.dossier-card__picked-name {
+  font-family: var(--font-title);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-align: center;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  word-break: break-word;
+}
+
+.dossier-card__dots {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0.3rem;
+}
+
+.dossier-card__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--green-bright);
+  opacity: 0.5;
+}
+
+/* ===== MY DOSSIER ===== */
+.cardpick__my-dossier {
+  max-width: 900px;
+  margin: 0 auto 2rem;
+  border: 1px solid var(--accent-dim);
+  background: rgba(200, 150, 62, 0.04);
+  padding: 1.2rem;
+}
+
+.cardpick__my-dossier-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-title);
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.cardpick__my-dossier-hint {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-style: italic;
+}
+
+.cardpick__my-dossier-loading {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+
+.cardpick__my-dossier-icon { font-size: 1rem; }
+
+.cardpick__my-dossier-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.8rem;
+}
+
+@media (max-width: 700px) { .cardpick__my-dossier-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.cardpick__char {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.8rem;
+}
+
+.cardpick__char-label {
+  display: block;
+  font-family: var(--font-title);
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+
+.cardpick__char-value {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.cardpick__char-desc {
+  display: block;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.4;
+  margin-top: 0.2rem;
+}
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 6, 8, 0.85);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.catastrophe-modal {
+  background: #0d0d12;
+  border: 1px solid var(--accent-dim);
+  padding: 2.5rem;
+  max-width: 620px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 0 80px rgba(200, 150, 62, 0.25), inset 0 0 60px rgba(0,0,0,0.5);
+}
+
+.catastrophe-modal__icon { font-size: 3.5rem; margin-bottom: 0.5rem; }
+.catastrophe-modal__title { font-size: 1.5rem; color: var(--accent); margin-bottom: 0.5rem; }
+
+.catastrophe-modal__desc {
+  font-size: 1rem;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.7;
+  margin: 1.2rem 0;
+  text-align: left;
+}
+
+.catastrophe-modal__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.catastrophe-modal__stat {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: 0.8rem;
+}
+
+.catastrophe-modal__stat span {
+  display: block;
+  font-family: var(--font-title);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+
+.catastrophe-modal__stat strong {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
