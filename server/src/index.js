@@ -213,6 +213,17 @@ function exilePlayer(room, playerId, tally) {
     room.currentTurnIndex = 0;
   }
   io.to(room.code).emit("voting:result", { exiledId: playerId, tally });
+
+  // Если после изгнания осталось <= мест в бункере — сразу финал
+  if (room.players.length <= room.bunkerSlots) {
+    room.phase = "final";
+    for (const p of [...room.players, ...room.exiled]) {
+      if (p.traits) p.revealed = Object.keys(p.traits);
+    }
+    broadcastRoom(room);
+    return;
+  }
+
   broadcastRoom(room);
 }
 
