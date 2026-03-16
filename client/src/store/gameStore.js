@@ -6,17 +6,7 @@ import { specialCards } from '../data/special_cards.js';
 
 const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
-// ── Сессия: сохраняем в localStorage чтобы пережить обновление страницы ──
-const SESSION_KEY = 'bunker_session';
-function _saveSession(data) {
-  try { localStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch {}
-}
-function _loadSession() {
-  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch { return null; }
-}
-function _clearSession() {
-  try { localStorage.removeItem(SESSION_KEY); } catch {}
-}
+
 
 function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -82,28 +72,9 @@ export const useGameStore = create((set, get) => ({
   // connection
   socket: null,
   connected: false,
-  // Если есть сессия — сразу ставим страницу ожидания reconnect, не home
-  page: (() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('bunker_session') || 'null');
-      return saved?.code ? 'reconnecting' : 'home';
-    } catch { return 'home'; }
-  })(),
-
-  // Сразу восстанавливаем имя и код из сессии
-  playerName: (() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('bunker_session') || 'null');
-      return saved?.name || '';
-    } catch { return ''; }
-  })(),
-
-  roomCode: (() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('bunker_session') || 'null');
-      return saved?.code || null;
-    } catch { return null; }
-  })(),
+  page: 'home',
+  playerName: '',
+  roomCode: null,
 
   // identity
   playerId: null,
@@ -116,24 +87,9 @@ export const useGameStore = create((set, get) => ({
   // card picking
   pickQueue: [],
   availableCards: null,
-  myDossier: (() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('bunker_session') || 'null');
-      return saved?.myDossier || null;
-    } catch { return null; }
-  })(),
-  mySpecialSelf: (() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('bunker_session') || 'null');
-      return saved?.mySpecialSelf || null;
-    } catch { return null; }
-  })(),
-  mySpecialGroup: (() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('bunker_session') || 'null');
-      return saved?.mySpecialGroup || null;
-    } catch { return null; }
-  })(),
+  myDossier: null,
+  mySpecialSelf: null,
+  mySpecialGroup: null,
   allDossiers: {},
   currentTurnIndex: 0,
 
@@ -161,7 +117,7 @@ export const useGameStore = create((set, get) => ({
     const s = getSocket();
     set({ socket: s });
 
-    // Снимаем старые обработчики чтобы не дублировались при StrictMode
+    // Снимаем старые обработчики (защита от StrictMode)
     s.off('connect');
     s.off('disconnect');
     s.off('connect_error');
@@ -174,33 +130,12 @@ export const useGameStore = create((set, get) => ({
     s.off('voting:progress');
     s.off('bot:traits');
 
-    function handleConnect() {
+    s.on('connect', () => {
       set({ connected: true, playerId: s.id });
-      const saved = _loadSession();
-      if (saved?.code && saved?.name) {
-        const timeout = setTimeout(() => {
-          if (get().page === 'reconnecting') {
-            _clearSession();
-            set({ page: 'home' });
-          }
-        }, 5000);
-        s.emit('lobby:rejoin', { code: saved.code, name: saved.name }, (res) => {
-          clearTimeout(timeout);
-          if (!res?.ok) {
-            _clearSession();
-            set({ myDossier: null, mySpecialSelf: null, mySpecialGroup: null, page: 'home' });
-          }
-        });
-      } else if (get().page === 'reconnecting') {
-        set({ page: 'home' });
-      }
-    }
+    });
 
-    s.on('connect', handleConnect);
-
-    // Уже подключён (повторный mount) — сразу вызываем
     if (s.connected) {
-      handleConnect();
+      set({ connected: true, playerId: s.id });
     } else {
       s.connect();
     }
@@ -242,7 +177,6 @@ export const useGameStore = create((set, get) => ({
       const myPlayer = room.players.find(p => p.id === myId);
       const nameToSave = playerName || myPlayer?.name;
       if (room.code && nameToSave) {
-        _saveSession({ code: room.code, name: nameToSave, playerId: myId, myDossier, mySpecialSelf, mySpecialGroup });
       }
 
       set({
@@ -287,8 +221,7 @@ export const useGameStore = create((set, get) => ({
       }
     });
 
-    s.on('lobby:closed', () => {
-      _clearSession(); // Комната закрыта — удаляем сессию
+    s.on('lobby:closed', () => { // Комната закрыта — удаляем сессию
       set({ page: 'home', roomCode: null, notification: { type: 'error', text: 'Лобби закрыто' } });
     });
 
@@ -364,7 +297,6 @@ export const useGameStore = create((set, get) => ({
       console.log('[action] createRoom response', res);
       if (res?.ok) {
         const room = res.room;
-        _saveSession({ code: res.code, name: playerName || 'Хост', playerId: s.id, myDossier: null });
         set({
           roomCode: res.code, isHost: true, page: 'lobby',
           players: room?.players || [],
@@ -390,7 +322,6 @@ export const useGameStore = create((set, get) => ({
       console.log('[action] joinRoom response', res);
       if (res?.ok) {
         const room = res.room;
-        _saveSession({ code: res.code, name: playerName || 'Игрок', playerId: s.id, myDossier: null });
         set({
           roomCode: res.code, isHost: false, page: 'lobby',
           players: room?.players || [],
@@ -481,7 +412,6 @@ export const useGameStore = create((set, get) => ({
 
   closeLobby() {
     const { socket, roomCode } = get();
-    _clearSession();
     socket?.emit('lobby:close', { code: roomCode });
   },
 

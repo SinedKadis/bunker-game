@@ -10,21 +10,6 @@ import Notification from './components/Notification';
 
 const SCROLLABLE_PAGES = ['card_pick', 'final', 'discussion'];
 
-function ReconnectingPage() {
-  return (
-    <div style={{
-      width:'100%', height:'100%', display:'flex', flexDirection:'column',
-      alignItems:'center', justifyContent:'center',
-      background:'radial-gradient(ellipse at 50% 30%, #1a1208 0%, #0a0a0b 60%)',
-      fontFamily:'var(--font-mono)', color:'var(--text-muted)',
-    }}>
-      <div style={{fontSize:32, marginBottom:20, opacity:0.6}}>⌛</div>
-      <div style={{fontSize:12, letterSpacing:'0.25em', textTransform:'uppercase'}}>
-        восстановление соединения...
-      </div>
-    </div>
-  );
-}
 
 export default function App() {
   const { initSocket, page, notification, clearNotification } = useGameStore();
@@ -35,7 +20,6 @@ export default function App() {
 
   const renderPage = () => {
     switch (page) {
-      case 'reconnecting': return <ReconnectingPage />;
       case 'home':        return <HomePage />;
       case 'lobby':       return <LobbyPage />;
       case 'card_pick':   return <CardPickPage />;

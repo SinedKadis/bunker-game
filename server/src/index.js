@@ -2,8 +2,6 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
-import fs from "fs";
-import path from "path";
 
 const app = express();
 app.use(cors());
@@ -13,47 +11,6 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: { origin: "*", methods: ["GET", "POST"] },
 });
-
-// ── Персистентность комнат ──
-const ROOMS_FILE = path.join(process.cwd(), "rooms_state.json");
-
-function saveRooms() {
-  try {
-    const data = {};
-    for (const [code, room] of rooms.entries()) {
-      // Сохраняем только если игра активна (не финал)
-      if (room.phase !== "final") {
-        data[code] = room;
-      }
-    }
-    fs.writeFileSync(ROOMS_FILE, JSON.stringify(data, null, 2));
-  } catch (e) {
-    console.error("[persist] save error:", e.message);
-  }
-}
-
-function loadRooms() {
-  try {
-    if (!fs.existsSync(ROOMS_FILE)) return;
-    const data = JSON.parse(fs.readFileSync(ROOMS_FILE, "utf8"));
-    for (const [code, room] of Object.entries(data)) {
-      // Сбрасываем таймеры голосования — они не переживут перезапуск
-      room.votingTimer = null;
-      room.votingOpen = false;
-      rooms.set(code, room);
-    }
-    console.log(`[persist] loaded ${rooms.size} rooms`);
-  } catch (e) {
-    console.error("[persist] load error:", e.message);
-  }
-}
-
-// Сохраняем при изменениях (дебаунс 1 сек)
-let saveTimeout = null;
-function scheduleSave() {
-  clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(saveRooms, 1000);
-}
 
 function genCode() {
   return Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -69,7 +26,6 @@ function shuffle(arr) {
 }
 
 const rooms = new Map();
-loadRooms(); // загружаем при старте
 
 
 function createRoom(hostSocketId, hostName) {
@@ -179,7 +135,6 @@ function roomPublic(room) {
 }
 
 function broadcastRoom(room) {
-  scheduleSave();
   io.to(room.code).emit("room:update", roomPublic(room));
   for (const p of room.players) {
     if (!p.isBot && p.traits) {
@@ -310,47 +265,6 @@ io.on("connection", socket => {
     cb?.(list);
   });
 
-  socket.on("lobby:rejoin", ({ code, name }, cb) => {
-    const upperCode = code?.toUpperCase();
-    const room = rooms.get(upperCode);
-
-    console.log(`[rejoin] code=${upperCode} name=${name} roomFound=${!!room} rooms=[${[...rooms.keys()].join(",")}]`);
-
-    if (!room) return cb?.({ ok: false, error: "Комната не найдена" });
-
-    // Ищем среди живых и изгнанных
-    const allInRoom = [...(room.players || []), ...(room.exiled || [])];
-    console.log(`[rejoin] players in room: ${allInRoom.map(p => p.name).join(", ")}`);
-
-    const existing = allInRoom.find(p => p.name === name);
-    if (!existing) return cb?.({ ok: false, error: "Игрок не найден" });
-
-    const oldId = existing.id;
-    existing.id = socket.id;
-
-    if (room.host === oldId) room.host = socket.id;
-    if (room.turnQueue)  room.turnQueue  = room.turnQueue.map(id => id === oldId ? socket.id : id);
-    if (room.pickQueue)  room.pickQueue  = room.pickQueue.map(id => id === oldId ? socket.id : id);
-    if (room.votes) room.votes = Object.fromEntries(
-      Object.entries(room.votes).map(([k, v]) => [
-        k === oldId ? socket.id : k,
-        v === oldId ? socket.id : v
-      ])
-    );
-
-    socket.join(upperCode);
-    console.log(`[rejoin] ok — ${name} rejoined as ${socket.id}`);
-    cb?.({ ok: true });
-    broadcastRoom(room);
-    if (existing.traits) {
-      socket.emit("player:traits", {
-        ...existing.traits,
-        _specialSelf:  existing.specialSelf  || null,
-        _specialGroup: existing.specialGroup || null,
-      });
-    }
-  });
-
   socket.on("lobby:create", ({ name }, cb) => {
     const room = createRoom(socket.id, name || "Хост");
     socket.join(room.code);
@@ -360,13 +274,78 @@ io.on("connection", socket => {
   socket.on("lobby:join", ({ code, name }, cb) => {
     const room = rooms.get(code?.toUpperCase());
     if (!room) return cb?.({ ok: false, error: "Комната не найдена" });
-    if (room.phase !== "lobby") return cb?.({ ok: false, error: "Игра уже началась" });
-    if (room.players.filter(p => !p.isBot).length >= room.maxPlayers)
-      return cb?.({ ok: false, error: "Комната заполнена" });
-    addPlayer(room, socket.id, name || "Игрок");
-    socket.join(room.code);
-    cb?.({ ok: true, code: room.code, room: roomPublic(room) });
-    broadcastRoom(room);
+
+    // В лобби — обычное подключение
+    if (room.phase === "lobby") {
+      if (room.players.filter(p => !p.isBot).length >= room.maxPlayers)
+        return cb?.({ ok: false, error: "Комната заполнена" });
+      addPlayer(room, socket.id, name || "Игрок");
+      socket.join(room.code);
+      cb?.({ ok: true, code: room.code, room: roomPublic(room) });
+      broadcastRoom(room);
+      return;
+    }
+
+    // В активной игре — только до 3й фазы включительно
+    if (room.phase === "discussion" && room.discussionPhase <= 3) {
+      // Создаём игрока и назначаем ему карточку из оставшихся
+      const availableCard = room.cards?.find(c => !c.picked);
+      if (!availableCard) return cb?.({ ok: false, error: "Нет свободных карточек" });
+
+      availableCard.picked = true;
+      availableCard.pickedBy = socket.id;
+      availableCard.pickedByName = name || "Игрок";
+
+      const newPlayer = {
+        id: socket.id,
+        name: name || "Игрок",
+        isBot: false,
+        cardId: availableCard.id,
+        traits: availableCard.traits || null,
+        specialSelf:  availableCard.specialSelf  || null,
+        specialGroup: availableCard.specialGroup || null,
+        specialSelfUsed: false,
+        specialGroupUsed: false,
+        specialUsed: false,
+        // Автоматически раскрываем карточки согласно текущей фазе
+        // Фаза 1 = 1 карточка, фаза 2 = 2 карточки и т.д.
+        revealed: [],
+        revealedThisPhase: 1, // уже "сходил" в текущей фазе
+      };
+
+      // Раскрываем карточки за прошедшие фазы
+      const keysToReveal = ["profession","biology","health","phobia","hobby","fact1","fact2","baggage"];
+      const phasesCompleted = room.discussionPhase - 1; // сколько фаз уже прошло
+      for (let i = 0; i < Math.min(phasesCompleted, keysToReveal.length); i++) {
+        newPlayer.revealed.push(keysToReveal[i]);
+      }
+
+      room.players.push(newPlayer);
+      // Добавляем в конец очереди ходов
+      room.turnQueue.push(socket.id);
+
+      socket.join(code.toUpperCase());
+      cb?.({ ok: true, code: code.toUpperCase(), room: roomPublic(room) });
+
+      // Отправляем traits новому игроку
+      if (newPlayer.traits) {
+        socket.emit("player:traits", {
+          ...newPlayer.traits,
+          _specialSelf:  newPlayer.specialSelf,
+          _specialGroup: newPlayer.specialGroup,
+        });
+      }
+
+      broadcastRoom(room);
+      return;
+    }
+
+    // После 3й фазы — нельзя войти
+    if (room.phase === "discussion" && room.discussionPhase > 3) {
+      return cb?.({ ok: false, error: "Игра уже прошла 3 фазу, вход закрыт" });
+    }
+
+    return cb?.({ ok: false, error: "Нельзя войти в игру сейчас" });
   });
 
   socket.on("lobby:settings", ({ code, settings }) => {
@@ -596,7 +575,6 @@ io.on("connection", socket => {
     if (!room || room.host !== socket.id) return;
     io.to(code).emit("lobby:closed");
     rooms.delete(code);
-    scheduleSave();
   });
 
   socket.on("game:useSpecial", ({ code, effect, targetId }, cb) => {
