@@ -74,12 +74,6 @@ function _clearSession() {
   try { localStorage.removeItem(SESSION_KEY); } catch {}
 }
 
-// Определяем начальную страницу — если есть сессия, показываем "reconnecting"
-function _getInitialPage() {
-  const session = _loadSession();
-  return session?.code && session?.name ? 'reconnecting' : 'home';
-}
-
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -93,7 +87,7 @@ export const useGameStore = create((set, get) => ({
   // connection
   socket: null,
   connected: false,
-  page: _getInitialPage(),
+  page: 'home',
   playerName: '',
   roomCode: null,
 
@@ -121,7 +115,6 @@ export const useGameStore = create((set, get) => ({
   currentPhase: 1,
   turnQueue: [],
   votingActive: false,
-  votingPending: false,
   votes: {},
   votingTimeLeft: 120,
   gameLog: [],
@@ -161,16 +154,10 @@ export const useGameStore = create((set, get) => ({
         set({ page: 'reconnecting' });
         s.emit('lobby:rejoin', { code: session.code, name: session.name }, (res) => {
           if (res?.ok) {
-            const room = res.room;
-            let page = 'lobby';
-            if (room?.phase === 'discussion' || room?.phase === 'picking') page = 'discussion';
-            if (room?.phase === 'final') page = 'final';
             set({
               roomCode: res.code,
-              page,
-              playerName: session.name,
-              isHost: room?.host === s.id,
-              players: room?.players || [],
+              isHost: res.room?.host === s.id,
+              players: res.room?.players || [],
               myDossier: session.myDossier || null,
               mySpecialSelf: session.mySpecialSelf || null,
               mySpecialGroup: session.mySpecialGroup || null,
@@ -185,33 +172,7 @@ export const useGameStore = create((set, get) => ({
     });
 
     if (s.connected) {
-      // Сокет уже подключён — вручную запускаем логику реконнекта
       set({ connected: true, playerId: s.id });
-      const session = _loadSession();
-      if (session?.code && session?.name) {
-        set({ page: 'reconnecting' });
-        s.emit('lobby:rejoin', { code: session.code, name: session.name }, (res) => {
-          if (res?.ok) {
-            const room = res.room;
-            let page = 'lobby';
-            if (room?.phase === 'discussion' || room?.phase === 'picking') page = 'discussion';
-            if (room?.phase === 'final') page = 'final';
-            set({
-              roomCode: res.code,
-              page,
-              playerName: session.name,
-              isHost: room?.host === s.id,
-              players: room?.players || [],
-              myDossier: session.myDossier || null,
-              mySpecialSelf: session.mySpecialSelf || null,
-              mySpecialGroup: session.mySpecialGroup || null,
-            });
-          } else {
-            _clearSession();
-            set({ page: 'home' });
-          }
-        });
-      }
     } else {
       s.connect();
     }
@@ -253,14 +214,6 @@ export const useGameStore = create((set, get) => ({
       const myPlayer = room.players.find(p => p.id === myId);
       const nameToSave = playerName || myPlayer?.name;
       if (room.code && nameToSave) {
-        _saveSession({
-          code: room.code,
-          name: nameToSave,
-          myDossier: myDossier || null,
-          mySpecialSelf: mySpecialSelf || null,
-          mySpecialGroup: mySpecialGroup || null,
-        });
-        if (!playerName && nameToSave) set({ playerName: nameToSave });
       }
 
       set({
@@ -282,7 +235,6 @@ export const useGameStore = create((set, get) => ({
         bunkerContents: room.bunkerItems || [],
         exiledPlayers: room.exiled || [],
         votingActive: room.votingOpen || false,
-        votingPending: room.votingPending || false,
         allDossiers,
         page,
       });
@@ -291,13 +243,10 @@ export const useGameStore = create((set, get) => ({
     s.on('player:traits', (traits) => {
       if (traits) {
         const { _specialSelf, _specialGroup, _specialCard, ...purTraits } = traits;
-        set(st => ({
-          myDossier: purTraits,
-          // Обновляем allDossiers для себя чтобы карточки сразу отображались после reroll
-          allDossiers: { ...st.allDossiers, [s.id]: { ...(st.allDossiers[s.id] || {}), ...purTraits } },
-        }));
+        set({ myDossier: purTraits });
         if (_specialSelf)  set({ mySpecialSelf:  _specialSelf  });
         if (_specialGroup) set({ mySpecialGroup: _specialGroup });
+        // legacy single card
         if (_specialCard && !_specialSelf) set({ mySpecialSelf: _specialCard });
         const { roomCode, playerName } = get();
         if (roomCode) _saveSession({
@@ -478,11 +427,6 @@ export const useGameStore = create((set, get) => ({
   useSpecial(effect, targetId, cb) {
     const { socket, roomCode } = get();
     socket?.emit('game:useSpecial', { code: roomCode, effect, targetId }, cb);
-  },
-
-  startVoting() {
-    const { socket, roomCode } = get();
-    socket?.emit('game:startVoting', { code: roomCode });
   },
 
   endVoting() {
