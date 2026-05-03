@@ -740,7 +740,7 @@ function applySpecialEffect(room, playerId, effect, targetId) {
   const player = room.players.find(p => p.id === playerId);
   if (!player) return { ok: false };
 
-  const others = room.players.filter(p => p.id !== playerId && !p.isBot);
+  const others = room.players.filter(p => p.id !== playerId); // включаем ботов
   const allPlayers = room.players.filter(p => !p.isBot);
 
   function randTrait(arr) {
@@ -791,8 +791,8 @@ function applySpecialEffect(room, playerId, effect, targetId) {
       return { ok: true, msg: "Секрет изменён" };
     }
     case "shuffle_health_others": {
-      // Перемешиваем здоровье только тех у кого оно раскрыто
-      const targets = others.filter(p => p.revealed.includes("health") && p.traits?.health);
+      // Все игроки включая ботов у кого раскрыто здоровье
+      const targets = room.players.filter(p => p.id !== playerId && p.revealed.includes("health") && p.traits?.health);
       if (targets.length < 1) return { ok: false, error: "Ни у кого не раскрыто Здоровье" };
       const pool = targets.map(p => p.traits.health);
       const shuffled = [...pool].sort(() => Math.random() - 0.5);
@@ -800,8 +800,8 @@ function applySpecialEffect(room, playerId, effect, targetId) {
       return { ok: true, msg: `Здоровье перемешано у ${targets.length} игроков` };
     }
     case "shuffle_profession_others": {
-      // Перемешиваем профессии только тех у кого раскрыта профессия
-      const targets = others.filter(p => p.revealed.includes("profession") && p.traits?.profession);
+      // Все игроки включая ботов у кого раскрыта профессия
+      const targets = room.players.filter(p => p.id !== playerId && p.revealed.includes("profession") && p.traits?.profession);
       if (targets.length < 1) return { ok: false, error: "Ни у кого не раскрыта Профессия" };
       const pool = targets.map(p => p.traits.profession);
       const shuffled = [...pool].sort(() => Math.random() - 0.5);
@@ -809,8 +809,8 @@ function applySpecialEffect(room, playerId, effect, targetId) {
       return { ok: true, msg: `Профессии перемешаны у ${targets.length} игроков` };
     }
     case "shuffle_hobby_others": {
-      // Перемешиваем хобби только тех у кого раскрыто хобби
-      const targets = others.filter(p => p.revealed.includes("hobby") && p.traits?.hobby);
+      // Все игроки включая ботов у кого раскрыто хобби
+      const targets = room.players.filter(p => p.id !== playerId && p.revealed.includes("hobby") && p.traits?.hobby);
       if (targets.length < 1) return { ok: false, error: "Ни у кого не раскрыто Хобби" };
       const pool = targets.map(p => p.traits.hobby);
       const shuffled = [...pool].sort(() => Math.random() - 0.5);
